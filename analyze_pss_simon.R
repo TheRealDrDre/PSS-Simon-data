@@ -1,8 +1,10 @@
 library(Rmisc)
 library(matlab)
 library(psych)
+library(ppcor)
 source("functions.R")
-data <- read.table("summary_data2.txt", header=T, sep="\t")
+#data <- read.table("summary_data2.txt", header=T, sep="\t")
+data <- read.table("summary_data3.txt", header=T, sep="\t")
 data <- subset(data, data$ChooseA_ACC >= 0)
 
 # We are interested only in Simon results
@@ -30,6 +32,7 @@ pss_data <- merge(pss_data_1, pss_data_2, all=T)
 # Classic lack of differences
 
 t.test(Accuracy ~ Condition, pss_data, paired=T)
+cor.test(data$ChooseB_ACC, data$ChooseA_ACC)
 
 
 ## SIMON
@@ -58,6 +61,9 @@ tapply(simon_data$Latency, simon_data$Condition, sd)
 t.test(Latency ~ Condition, simon_data, paired=T)
 t.test(Accuracy ~ Condition, simon_data, paired=T)
 
+t.test(asin(sqrt(Accuracy)) ~ Condition, simon_data, paired=T)
+
+
 # The correlations
 
 cor.test(data$ChooseB_ACC, data$Pre_Incongruent_SimonRT)
@@ -67,6 +73,40 @@ cor.test(data$ChooseB_ACC, data$Pre_CongruencyEffect_SimonRT)
 cor.test(data$ChooseA_ACC, data$Pre_Incongruent_SimonRT)
 cor.test(data$ChooseA_ACC, data$Pre_Congruent_SimonRT)
 cor.test(data$ChooseA_ACC, data$Pre_CongruencyEffect_SimonRT)
+
+
+# load WM scores
+
+wm <- read.table("wm.txt", header=T, sep="\t")
+
+wm <- subset(wm, wm$Subject %in% data$Subject)
+data <- merge(data, wm, all=T)
+
+# No correlation of WM scores
+
+cor.test(data$OS.Score, data$Pre_Incongruent_SimonRT)
+cor.test(data$OS.Score, data$Pre_Congruent_SimonRT)
+cor.test(data$OS.Score, data$Pre_CongruencyEffect_SimonRT)
+
+cor.test(data$OS.Score, data$Pre_Incongruent_SimonACC)
+cor.test(data$OS.Score, data$Pre_Congruent_SimonACC)
+
+
+cor.test(data$OS.Score, data$ChooseB_ACC)
+cor.test(data$OS.Score, data$ChooseA_ACC)
+
+
+
+# Partial correlations
+
+pcor.test(data$ChooseB_ACC, data$Pre_Incongruent_SimonRT, data$OS.Score)
+pcor.test(data$ChooseB_ACC, data$Pre_Congruent_SimonRT, data$OS.Score)
+pcor.test(data$ChooseB_ACC, data$Pre_CongruencyEffect_SimonRT, data$OS.Score)
+
+pcor.test(data$ChooseA_ACC, data$Pre_Incongruent_SimonRT, data$OS.Score)
+pcor.test(data$ChooseA_ACC, data$Pre_Congruent_SimonRT, data$OS.Score)
+pcor.test(data$ChooseA_ACC, data$Pre_CongruencyEffect_SimonRT, data$OS.Score)
+
 
 # Contrast of correlations
 
@@ -223,6 +263,7 @@ ukulele <- function() {
 ## MODEL
 
 model <- read.table("simulations-new.txt", header=T, sep=",")
+model <- read.table("simulations-new.txt", header=T, sep=",")
 names(model) <- c("D1", "D2", "Con_ACC", "Con_RT", "In_ACC", "In_RT" )
 
 # Generates a random factor
@@ -376,7 +417,7 @@ banana2 <- function() {
 }
 
 # Comparison of model and data 
-comp
+#scomp
 
 model_1 <- model[c("Con_RT", "Con_ACC", "Run")]
 model_1$Condition <- "Congruent"
@@ -459,6 +500,81 @@ paratu <- function() {
   abline(h=0, col="black")
   title(main="(B) Response Times")
   
+}
+
+
+oldcomp <- comp
+newsims <- read.table("final.txt", sep=",")
+names(newsims) <- c("Alpha", "LF", "EGS", "ANS", "Bias", "D1", "D2", "Con_ACC", "Con_RT", "Incon_ACC", "Incon_RT")
+
+zsims <- subset(newsims, newsims$Alpha == 0.3 & 
+                    newsims$EGS == 0.0 & 
+                    newsims$ANS == 0.2 & 
+                    newsims$LF == 0.25 & 
+                    newsims$Bias == 4.0 &
+                    newsims$D1 == 1.0 &
+                    newsims$D2 == 1.0)
+
+model_1 <- zsims[c("Con_RT", "Con_ACC")]
+model_1$Condition <- "Congruent"
+names(model_1)[1] <- "Latency"
+names(model_1)[2] <- "Accuracy"
+
+model_2 <- zsims[c("Incon_RT", "Incon_ACC")]
+model_2$Condition <- "Incongruent"
+names(model_2)[1] <- "Latency"
+names(model_2)[2] <- "Accuracy"
+
+model_comp <- merge(model_1, model_2, all=T)
+model_comp$Source <- "Model"
+model_comp$Latency <- model_comp$Latency * 1000
+
+comp <- subset(comp, comp$Source != "Model")
+
+comp <- merge(comp, model_comp, all=T)
+
+papagera <- function() {
+  #layout(mat = matrix(c(1, 1, 2, 3, 4, 5), nrow = 3, byrow=T),
+  #       widths=c(1, 1), heights=c(1/10, 1/10, 1))
+  
+  ## Modify comp to include the
+  layout(mat = matrix(c(1, 1, 2, 3), nrow = 2, byrow=T),
+         widths=c(1, 1), heights=c(1/10, 1))
+  
+  par(mar=c(0,4,0,2))
+  plot.new()
+  text("Comparison of Model and Data", x=0.5, y=1, adj=c(0.5,1), cex=1.5)
+  
+  #par(mar=c(0,3,1,1))
+  #plot.new()
+  #text("Accuracy", x=0.5, y=1, adj=c(0.5,1), cex=1.5)
+  
+  #plot.new()
+  #text("Response Times", x=0.5, y=1, adj=c(0.5,1), cex=1.5)
+  
+  par(mar=c(2,4,2,2))
+  
+  xs <- barplot(tapply(comp$Accuracy, list(comp$Condition, comp$Source), mean), 
+                ylim=c(0, 1.15), ylab="Accuracy", col=c("grey75", "grey55"), 
+                beside=T, legend=T, args.legend=list(x="topleft", bty="n", border="white"),
+                border="white")
+  ys <- tapply(comp$Accuracy, list(comp$Condition, comp$Source), mean)
+  ses <- tapply(comp$Accuracy, list(comp$Condition, comp$Source), se)
+  arrows(xs, ys, xs, ys + ses, length = 0.1, angle=90)
+  arrows(xs, ys, xs, ys - ses, length = 0.1, angle=90)
+  abline(h=0, col="black")
+  title(main="(A) Accuracy")
+  
+  xs <- barplot(tapply(comp$Latency, list(comp$Condition, comp$Source), mean), 
+                ylim=c(0, 650), ylab="Response Times (ms)", col=c("grey75", "grey55"), 
+                beside=T, legend=T, args.legend=list(x="topleft", bty="n", border="white"),
+                border="white")
+  ys <- tapply(comp$Latency, list(comp$Condition, comp$Source), mean)
+  ses <- tapply(comp$Latency, list(comp$Condition, comp$Source), se)
+  arrows(xs, ys, xs, ys + ses, length = 0.1, angle=90)
+  arrows(xs, ys, xs, ys - ses, length = 0.1, angle=90)
+  abline(h=0, col="black")
+  title(main="(B) Response Times")
 }
 
 
